@@ -19,12 +19,12 @@ class ClaudeClient(AIModel):
     def generate_response(self, prompt):
         response = self.client.messages.create(
             model="claude-3-5-sonnet-20240620",
-            max_tokens=200000,
+            max_tokens=8000,
             messages=[
                 {"role": "user", "content": prompt}
             ]
         )
-        return response.content
+        return ''.join(block.text for block in response.content)
 
 class OpenAIClient(AIModel):
     def __init__(self):
@@ -34,7 +34,7 @@ class OpenAIClient(AIModel):
 
     def generate_response(self, prompt):
         response = self.client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
                 {"role": "user", "content": prompt}
             ]
@@ -51,28 +51,32 @@ def read_data(file_path):
         raise ValueError("Unsupported file format. Please use .xlsx or .csv")
 
 def generate_dashboard_code(data, model):
-    """Generate dashboard code using the specified AI model"""
-    data_summary = data.describe().to_string()
-    prompt = f"""You are an expert in data analysis and visualization. Your task is to analyze the following dataset summary and generate Python code for an interactive dashboard using Dash and Plotly.
+    """Generate a complete, runnable dashboard code using the specified AI model"""
 
-Dataset summary:
-{data_summary}
+    prompt = f"""
+    Create a complete, runnable Python script that generates an interactive dashboard using Dash and Plotly based on this dataset. (Head 10 rows of the dataset shown below):
 
-Instructions:
-1. Data Import and Preparation: Include code to load and clean the data.
-2. Exploratory Data Analysis (EDA): Calculate descriptive statistics and identify patterns.
-3. Visualizations and Insights: Create visualizations that best represent the key insights.
-4. Interactive Dashboard: Develop an interactive dashboard with filters or controls.
+    {data.head(10).to_string()}
 
-Provide only the Python code required to create the dashboard. The code should be complete and runnable, including all necessary imports and the app.run_server() call.
+    The script should include the following components:
+    1. Data import and cleaning
+    2. Exploratory Data Analysis (EDA)
+    3. Dashboard layout and structure
+    4. Interactive visualizations
+    5. User controls (e.g., filters, dropdowns)
+    6. Main function to run the dashboard
 
-Objective: Create a dashboard that presents the data in a visually appealing manner and provides valuable insights easily understandable by someone with no prior experience in data analysis or business intelligence.
-Output: The output will be saved in a runnable .py file so make sure you just output the runnable python code with nothing else.
-"""
+    The final script should be a single, self-contained file that can be run to launch the interactive dashboard. 
+    Ensure the code is well-organized, documented, and follows best practices for Streamlit Dashboards.
+    Do not include any placeholder comments or TODO items. The script should be complete and ready to run.
 
-    return model.generate_response(prompt)
+    Important: The script must use Streamlit and Plotly for the dashboard. Do not use any other visualization libraries.
+    """
 
-def save_dashboard_code(code, output_file="output/dashboard.py"):
+    dashboard_code = model.generate_response(prompt)
+    return dashboard_code
+
+def save_dashboard_code(code, output_file="output/dashboard_claude.py"):
     """Save the generated dashboard code to a file"""
     with open(output_file, "w") as f:
         f.write(code)
@@ -80,9 +84,9 @@ def save_dashboard_code(code, output_file="output/dashboard.py"):
 
 def main():
     # Choose the AI model client (Claude or OpenAI)
-    model = OpenAIClient()
+    model = ClaudeClient()
 
-    data = read_data("data/Rotten Tomatoes Movies.csv")
+    data = read_data("Data/Marketing+Data/marketing_data.csv")
     dashboard_code = generate_dashboard_code(data, model)
     save_dashboard_code(dashboard_code)
 
