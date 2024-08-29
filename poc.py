@@ -1,9 +1,9 @@
 import pandas as pd
 import anthropic
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
+import streamlit as st
 
 load_dotenv()
 
@@ -26,21 +26,6 @@ class ClaudeClient(AIModel):
         )
         return ''.join(block.text for block in response.content)
 
-class OpenAIClient(AIModel):
-    def __init__(self):
-        self.client = OpenAI(
-            api_key=os.environ.get("OPENAI_API_KEY"),
-        )
-
-    def generate_response(self, prompt):
-        response = self.client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-
 def read_data(file_path):
     """Read data from Excel or CSV file"""
     if file_path.endswith('.xlsx'):
@@ -51,43 +36,70 @@ def read_data(file_path):
         raise ValueError("Unsupported file format. Please use .xlsx or .csv")
 
 def generate_dashboard_code(data, model):
-    """Generate a complete, runnable dashboard code using the specified AI model"""
-
+    """Generate dashboard code using the specified AI model"""
     prompt = f"""
-    Create a complete, runnable Python script that generates an interactive dashboard using Dash and Plotly based on this dataset. (Head 10 rows of the dataset shown below):
+    Create Python code for a Streamlit dashboard based on this dataset (first 10 rows shown below):
 
     {data.head(10).to_string()}
 
-    The script should include the following components:
-    1. Data import and cleaning
-    2. Exploratory Data Analysis (EDA)
-    3. Dashboard layout and structure
-    4. Interactive visualizations
-    5. User controls (e.g., filters, dropdowns)
-    6. Main function to run the dashboard
+    The code should include:
+    1. Data preprocessing (if needed)
+    2. At least two visualizations using Plotly or Altair
+    3. Some basic statistics or insights about the data
+    4. Interactive elements (e.g., filters, selectors)
 
-    The final script should be a single, self-contained file that can be run to launch the interactive dashboard. 
-    Ensure the code is well-organized, documented, and follows best practices for Streamlit Dashboards.
-    Do not include any placeholder comments or TODO items. The script should be complete and ready to run.
-
-    Important: The script must use Streamlit and Plotly for the dashboard. Do not use any other visualization libraries.
+    The code should be complete and ready to run within a Streamlit app.
+    Do not include any placeholder comments or TODO items.
     """
 
     dashboard_code = model.generate_response(prompt)
     return dashboard_code
 
-def save_dashboard_code(code, output_file="output/dashboard_claude.py"):
+def save_dashboard_code(code, output_file="output/streamlit_dashboard.py"):
     """Save the generated dashboard code to a file"""
+    template = """
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import altair as alt
+
+# Load the data
+@st.cache_data
+def load_data():
+    return pd.read_csv("Data/Marketing+Data/marketing_data.csv")
+
+data = load_data()
+
+# Set page title
+st.set_page_config(page_title="Marketing Data Dashboard", layout="wide")
+
+# Main title
+st.title("Marketing Data Dashboard")
+
+# Generated dashboard code will be inserted here
+{generated_code}
+
+if __name__ == "__main__":
+    st.sidebar.info("This dashboard is generated using AI.")
+    """
+    
+    full_code = template.format(generated_code=code)
+    
     with open(output_file, "w") as f:
-        f.write(code)
+        f.write(full_code)
     print(f"Dashboard code saved to {output_file}")
 
 def main():
-    # Choose the AI model client (Claude or OpenAI)
+    # Choose the AI model client (Claude in this case)
     model = ClaudeClient()
 
+    # Read the data
     data = read_data("Data/Marketing+Data/marketing_data.csv")
+    
+    # Generate dashboard code
     dashboard_code = generate_dashboard_code(data, model)
+    
+    # Save the generated code
     save_dashboard_code(dashboard_code)
 
 if __name__ == "__main__":
