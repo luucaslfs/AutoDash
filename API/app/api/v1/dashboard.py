@@ -8,7 +8,7 @@ from ...services.utils import generate_data_description
 
 dashboard_router = APIRouter()
 
-@dashboard_router.post("/generate-dashboard")
+@dashboard_router.post("/generate-dashboard", response_model=dict)
 async def generate_dashboard(table_data: TableData, db: AsyncSession = Depends(get_db)):
     try:
         # Convert the received data to a pandas DataFrame
