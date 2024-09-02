@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
+from .api.v1.dashboard import dashboard_router
 import httpx
 import os
 from dotenv import load_dotenv
@@ -22,6 +23,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(dashboard_router, prefix="/api/v1")
 
 # GitHub App credentials
 GITHUB_CLIENT_ID = settings.GH_CLIENT_ID

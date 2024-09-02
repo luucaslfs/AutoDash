@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, List, Optional
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
@@ -42,3 +42,7 @@ class UserInDB(UserBase):
 
 class GitHubCallbackRequest(BaseModel):
     code: str
+
+class TableData(BaseModel):
+    columns: List[str]
+    data: List[List[Any]]
