@@ -5,14 +5,28 @@ from ...database import get_db
 from ...models import TableData
 from ...services.llm_models import ClaudeClient
 from ...services.utils import generate_data_description
+import logging
+
+logger = logging.getLogger(__name__)
 
 dashboard_router = APIRouter()
 
 @dashboard_router.post("/generate-dashboard", response_model=dict)
 async def generate_dashboard(table_data: TableData, db: AsyncSession = Depends(get_db)):
     try:
+        logger.info(f"Received data: columns={len(table_data.columns)}, data_length={len(table_data.data)}")
+        
+        # Validate that all rows have the same number of columns
+        row_lengths = [len(row) for row in table_data.data]
+        if len(set(row_lengths)) > 1:
+            raise ValueError(f"Inconsistent number of columns in rows. Found lengths: {set(row_lengths)}")
+        
+        if len(table_data.columns) != row_lengths[0]:
+            raise ValueError(f"Mismatch between number of columns ({len(table_data.columns)}) and data ({row_lengths[0]})")
+        
         # Convert the received data to a pandas DataFrame
         df = pd.DataFrame(table_data.data, columns=table_data.columns)
+        logger.info(f"Created DataFrame with shape: {df.shape}")
         
         # Sample the data if it's large
         if len(df) > 1000:
@@ -23,8 +37,11 @@ async def generate_dashboard(table_data: TableData, db: AsyncSession = Depends(g
             df_sample = df
             is_sample = False
         
+        logger.info(f"Using {'sampled' if is_sample else 'full'} data with shape: {df_sample.shape}")
+        
         # Generate a data description
         data_description = generate_data_description(df_sample)
+        logger.info("Generated data description")
         
         # Create the prompt for Claude
         prompt = f"""
@@ -46,10 +63,13 @@ async def generate_dashboard(table_data: TableData, db: AsyncSession = Depends(g
         Provide only the Python code without any additional explanations.
         """
 
+        logger.info("Calling Claude API to generate dashboard code")
         # Call Claude API to generate the dashboard code
         claude_client = ClaudeClient()
         dashboard_code = claude_client.generate_response(prompt)
         
+        logger.info("Successfully generated dashboard code")
         return {"dashboard_code": dashboard_code}
     except Exception as e:
+        logger.exception("Error in generate_dashboard")
         raise HTTPException(status_code=400, detail=str(e))
