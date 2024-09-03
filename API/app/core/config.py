@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
     OPENAI_KEY: str	
     CLAUDE_API_KEY: str
+    GH_CALLBACK_URL: str
     GH_CLIENT_ID: str
     GH_CLIENT_SECRET: str
 
