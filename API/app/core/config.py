@@ -1,11 +1,15 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
 
 class Settings(BaseSettings):
     APP_NAME: str = "AutoDash API"
     DEBUG_MODE: bool = True
-    DATABASE_URL: str
-    SYNC_DATABASE_URL: str
+    DATABASE_URL: str = "sqlite+aiosqlite:///./autodash.db"
+    SYNC_DATABASE_URL: str = "sqlite:///./sync.db"
     TEST_DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
     OPENAI_KEY: str	
     CLAUDE_API_KEY: str
     GH_CALLBACK_URL: str
