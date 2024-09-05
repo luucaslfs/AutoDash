@@ -2,28 +2,37 @@ version: '3'
 
 services:
   autodash_database:
-    image: postgres
+    image: postgres:14
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
 
   api:
-    image: autodash-api
-    entrypoint: ["/app/entrypoint.sh"]
     build:
       context: .
       dockerfile: Dockerfile
+    command: ["./entrypoint.sh"]
+    volumes:
+      - .:/app
     ports:
-      - "8080:8080"
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@autodash_database:5432/${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - OPENAI_KEY=${OPENAI_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - GH_CALLBACK_URL=${GH_CALLBACK_URL}
+      - GH_CLIENT_ID=${GH_CLIENT_ID}
+      - GH_CLIENT_SECRET=${GH_CLIENT_SECRET}
     depends_on:
       - autodash_database
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
 
 volumes:
-  pgdata:
+  postgres_data:

@@ -4,11 +4,11 @@ import os
 class Settings(BaseSettings):
     APP_NAME: str = "AutoDash API"
     DEBUG_MODE: bool = True
-    DATABASE_URL: str = "sqlite:///./autodash.db"
     TEST_DATABASE_URL: str = "sqlite:///./test.db"
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    DATABASE_URL: str = f"postgresql://postgres_user:postgres_password@autodash_database:5432/app_db"
     OPENAI_KEY: str	
     CLAUDE_API_KEY: str
     GH_CALLBACK_URL: str
