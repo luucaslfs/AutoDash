@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 import pandas as pd
 from ...database import get_db
 from ...models import TableData
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 dashboard_router = APIRouter()
 
 @dashboard_router.post("/generate-dashboard", response_model=dict)
-async def generate_dashboard(table_data: TableData, db: AsyncSession = Depends(get_db)):
+def generate_dashboard(table_data: TableData, db: Session = Depends(get_db)):
     try:
         logger.info(f"Received data: columns={len(table_data.columns)}, data_length={len(table_data.data)}")
         

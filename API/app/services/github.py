@@ -1,6 +1,6 @@
-import httpx
+import requests
 from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from ..models import UserCreate, UserUpdate, UserInDB
 from ..core.config import settings
 from . import crud
@@ -8,7 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def github_oauth_callback(code: str, db: AsyncSession):
+def github_oauth_callback(code: str, db: Session):
     try:
         # Exchange code for access token
         token_url = "https://github.com/login/oauth/access_token"
@@ -20,14 +20,15 @@ async def github_oauth_callback(code: str, db: AsyncSession):
         }
         headers = {"Accept": "application/json"}
 
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(token_url, params=token_params, headers=headers)
+        logger.info(f"Sending token request to GitHub with params: {token_params}")
+        token_response = requests.post(token_url, params=token_params, headers=headers)
 
         if token_response.status_code != 200:
             logger.error(f"Failed to obtain access token. Status: {token_response.status_code}, Response: {token_response.text}")
             raise HTTPException(status_code=400, detail=f"Failed to obtain access token: {token_response.text}")
 
         token_data = token_response.json()
+        logger.info(f"Received token response: {token_data}")
         access_token = token_data.get("access_token")
 
         if not access_token:
@@ -41,14 +42,14 @@ async def github_oauth_callback(code: str, db: AsyncSession):
             "Accept": "application/json",
         }
 
-        async with httpx.AsyncClient() as client:
-            user_response = await client.get(user_url, headers=user_headers)
+        user_response = requests.get(user_url, headers=user_headers)
 
         if user_response.status_code != 200:
             logger.error(f"Failed to fetch user information. Status: {user_response.status_code}, Response: {user_response.text}")
             raise HTTPException(status_code=400, detail=f"Failed to fetch user information: {user_response.text}")
 
         github_user_data = user_response.json()
+        logger.info(f"Received GitHub user data: {github_user_data}")
 
         # Create or update user in database
         user_data = UserCreate(
@@ -59,16 +60,27 @@ async def github_oauth_callback(code: str, db: AsyncSession):
             avatar_url=github_user_data.get("avatar_url")
         )
         
-        db_user = await crud.get_user_by_github_id(db, github_id=user_data.github_id)
+        db_user = crud.get_user_by_github_id(db, github_id=user_data.github_id)
         if db_user:
-            db_user = await crud.update_user(db, db_user=db_user, user_update=UserUpdate(**user_data.model_dump()))
+            db_user = crud.update_user(db, db_user=db_user, user_update=UserUpdate(**user_data.model_dump()))
         else:
-            db_user = await crud.create_user(db, user=user_data)
+            db_user = crud.create_user(db, user=user_data)
+
+        # Convert SQLAlchemy model to Pydantic model
+        user_in_db = UserInDB(
+            id=db_user.id,
+            github_id=db_user.github_id,
+            login=db_user.login,
+            name=db_user.name,
+            email=db_user.email,
+            avatar_url=db_user.avatar_url,
+            created_at=db_user.created_at
+        )
 
         # Return access token and user information
         return {
             "access_token": access_token,
-            "user": UserInDB.from_orm(db_user)
+            "user": user_in_db.model_dump()
         }
     except Exception as e:
         logger.exception("Error in github_oauth_callback")

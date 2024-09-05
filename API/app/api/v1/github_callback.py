@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from ...models import GitHubCallbackRequest
 from ...database import get_db
 from ...services.github import github_oauth_callback
@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 github_router = APIRouter()
 
 @github_router.post("/github/callback")
-async def github_callback(request: GitHubCallbackRequest, db: AsyncSession = Depends(get_db)):
+def github_callback(request: GitHubCallbackRequest, db: Session = Depends(get_db)):
     try:
-        return await github_oauth_callback(request.code, db)
+        return github_oauth_callback(request.code, db)
     except HTTPException as he:
         logger.error(f"HTTP Exception in github_callback: {he.detail}")
         raise

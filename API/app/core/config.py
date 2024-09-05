@@ -4,9 +4,8 @@ import os
 class Settings(BaseSettings):
     APP_NAME: str = "AutoDash API"
     DEBUG_MODE: bool = True
-    DATABASE_URL: str = "sqlite+aiosqlite:///./autodash.db"
-    SYNC_DATABASE_URL: str = "sqlite:///./sync.db"
-    TEST_DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
+    DATABASE_URL: str = "sqlite:///./autodash.db"
+    TEST_DATABASE_URL: str = "sqlite:///./test.db"
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
