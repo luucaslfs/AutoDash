@@ -1,4 +1,5 @@
 import requests
+import logging
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ..models import UserCreate, UserUpdate, UserInDB
@@ -20,7 +21,7 @@ def github_oauth_callback(code: str, db: Session):
         }
         headers = {"Accept": "application/json"}
 
-        logger.info(f"Sending token request to GitHub with params: {token_params}")
+        logger.info(f"Sending token request to GitHub")
         token_response = requests.post(token_url, params=token_params, headers=headers)
 
         if token_response.status_code != 200:
@@ -28,7 +29,7 @@ def github_oauth_callback(code: str, db: Session):
             raise HTTPException(status_code=400, detail=f"Failed to obtain access token: {token_response.text}")
 
         token_data = token_response.json()
-        logger.info(f"Received token response: {token_data}")
+        logger.info(f"Received token response")
         access_token = token_data.get("access_token")
 
         if not access_token:
