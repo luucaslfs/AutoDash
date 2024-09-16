@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   autodash_database:
     image: postgres
@@ -12,7 +10,7 @@ services:
     ports:
       - "5432:5432"
 
-  api:
+  autodash_api:
     image: autodash-api
     entrypoint: ["/app/entrypoint.sh"]
     build:
@@ -24,6 +22,10 @@ services:
       - autodash_database
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      GH_CALLBACK_URL: ${GH_CALLBACK_URL}
+      GH_CLIENT_SECRET: ${GH_CLIENT_SECRET}
+      GH_CLIENT_ID: ${GH_CLIENT_ID}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
 
 volumes:
   pgdata:
