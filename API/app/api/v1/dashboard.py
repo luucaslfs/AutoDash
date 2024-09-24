@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import pandas as pd
 from ...database import get_db
-from ...models import TableData
-from ...services.llm_models import ClaudeClient
+from ...models import GenerateDashboardRequest, AIModelEnum
+from ...services.llm_models import ClaudeClient, OpenAIClient 
 from ...services.utils import generate_data_description
 import logging
 
@@ -12,11 +12,13 @@ logger = logging.getLogger(__name__)
 dashboard_router = APIRouter()
 
 @dashboard_router.post("/generate-dashboard", response_model=dict)
-def generate_dashboard(table_data: TableData, db: Session = Depends(get_db)):
+def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(get_db)):
     try:
-        logger.info(f"Received data: columns={len(table_data.columns)}, data_length={len(table_data.data)}")
+        table_data = request.table_data
+        model_choice = request.model
+        logger.info(f"Received data: columns={len(table_data.columns)}, data_length={len(table_data.data)}, model={model_choice}")
         
-        # Validate that all rows have the same number of columns
+        # Validação do número de colunas
         row_lengths = [len(row) for row in table_data.data]
         if len(set(row_lengths)) > 1:
             raise ValueError(f"Inconsistent number of columns in rows. Found lengths: {set(row_lengths)}")
@@ -24,13 +26,13 @@ def generate_dashboard(table_data: TableData, db: Session = Depends(get_db)):
         if len(table_data.columns) != row_lengths[0]:
             raise ValueError(f"Mismatch between number of columns ({len(table_data.columns)}) and data ({row_lengths[0]})")
         
-        # Convert the received data to a pandas DataFrame
+        # Conversão para DataFrame
         df = pd.DataFrame(table_data.data, columns=table_data.columns)
         logger.info(f"Created DataFrame with shape: {df.shape}")
         
-        # Sample the data if it's large
+        # Amostragem se necessário
         if len(df) > 1000:
-            sample_size = min(1000, int(len(df) * 0.1))
+            sample_size = min(1000, int(len(df) * 0.2))
             df_sample = df.sample(n=sample_size, random_state=42)
             is_sample = True
         else:
@@ -39,37 +41,53 @@ def generate_dashboard(table_data: TableData, db: Session = Depends(get_db)):
         
         logger.info(f"Using {'sampled' if is_sample else 'full'} data with shape: {df_sample.shape}")
         
-        # Generate a data description
-        data_description = generate_data_description(df_sample)
+        # Geração da descrição dos dados
+        data_description = generate_data_description(df)
         logger.info("Generated data description")
         
-        # Create the prompt for Claude
+        # Criação do prompt
         prompt = f"""
-        You are an expert Python developer specializing in data visualization and Streamlit dashboards.
-        Based on the following data description{' (note: this is based on a sample of the full dataset)' if is_sample else ''}, generate a complete, runnable Streamlit dashboard code:
+        Você é um desenvolvedor Python especialista em visualização de dados e dashboards com Streamlit.
+        Com base na seguinte descrição dos dados, gere um código completo e executável para um dashboard em Streamlit:
 
         {data_description}
 
-        The code should:
-        1. Import necessary libraries (pandas, streamlit, plotly, etc.)
-        2. Load the data (assume it's saved as 'data.csv')
-        3. Create appropriate visualizations based on the data types and potential relationships
-        4. Organize the visualizations in a clear, user-friendly Streamlit layout
-        5. Include any necessary data processing or transformations
-        6. Add interactive elements where appropriate (e.g., dropdowns for selecting columns to visualize)
-        7. Ensure the code is complete and can be run as-is by the user
-        8. If the description is based on a sample, include code to handle potential differences in the full dataset
+        Dados{' (nota: esta é uma amostra do dataset completo)' if is_sample else ''}:
+        ```csv
+        {df_sample}
+        ```
 
-        Provide only the Python code without any additional explanations.
+        O código deve:
+        1. Importar as bibliotecas necessárias (pandas, streamlit, plotly, etc.)
+        2. Carregar os dados (assuma que estão salvos como 'data.csv')
+        3. Criar visualizações apropriadas com base nos tipos de dados e possíveis relacionamentos
+        4. Organizar as visualizações em um layout claro e amigável no Streamlit
+        5. Incluir qualquer processamento ou transformação de dados necessária
+        6. Adicionar elementos interativos onde apropriado (por exemplo, dropdowns para selecionar colunas a serem visualizadas)
+        7. Garantir que o código esteja completo e possa ser executado diretamente pelo usuário
+        8. Se a descrição for baseada em uma amostra, incluir código para lidar com possíveis diferenças no dataset completo
+
+        Forneça apenas o código Python sem explicações adicionais.
         """
-
-        logger.info("Calling Claude API to generate dashboard code")
-        # Call Claude API to generate the dashboard code
-        claude_client = ClaudeClient()
-        dashboard_code = claude_client.generate_response(prompt)
         
-        logger.info("Successfully generated dashboard code")
+        logger.info(f"Prompt criado: {prompt}")
+        
+        # Instanciar o cliente de IA apropriado
+        if model_choice == AIModelEnum.CLAUDE:
+            client = ClaudeClient()
+            logger.info("Usando ClaudeClient para gerar o código do dashboard")
+        elif model_choice == AIModelEnum.OPENAI:
+            client = OpenAIClient()
+            logger.info("Usando OpenAIClient para gerar o código do dashboard")
+        else:
+            raise ValueError(f"Escolha de modelo não suportada: {model_choice}")
+        
+        # Chamar o cliente de IA para gerar o código do dashboard
+        dashboard_code = client.generate_response(prompt)
+        
+        logger.info("Dashboard code gerado com sucesso")
         return {"dashboard_code": dashboard_code}
     except Exception as e:
-        logger.exception("Error in generate_dashboard")
+        logger.exception("Erro em generate_dashboard")
         raise HTTPException(status_code=400, detail=str(e))
+

@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+from enum import Enum
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
@@ -40,9 +41,17 @@ class UserInDB(UserBase):
     class Config:
         from_attributes = True
 
+class AIModelEnum(str, Enum):
+    CLAUDE = "claude"
+    OPENAI = "openai"
+
+class TableData(BaseModel):
+    columns: List[str]
+    data: List[List]
+
 class GitHubCallbackRequest(BaseModel):
     code: str
 
-class TableData(BaseModel):
-    columns: list[str]
-    data: list[list]
+class GenerateDashboardRequest(BaseModel):
+    table_data: 'TableData'
+    model: AIModelEnum = AIModelEnum.CLAUDE # Default to Claude

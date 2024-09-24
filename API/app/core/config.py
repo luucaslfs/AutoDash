@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
-    OPENAI_KEY: str	
+    OPENAI_API_KEY: str	
     CLAUDE_API_KEY: str
     GH_CALLBACK_URL: str
     GH_CLIENT_ID: str
