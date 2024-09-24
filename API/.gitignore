@@ -14,8 +14,10 @@ ENV/
 
 # Logs
 *.log
+repopack*.txt
 
 # Dependency directories
+generated_dashboard/
 lib/
 libs/
 Library/
