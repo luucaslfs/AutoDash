@@ -26,6 +26,7 @@ services:
       GH_CLIENT_SECRET: ${GH_CLIENT_SECRET}
       GH_CLIENT_ID: ${GH_CLIENT_ID}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 volumes:
   pgdata:

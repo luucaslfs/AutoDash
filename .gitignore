@@ -6,6 +6,7 @@ __pycache__/
 # Local development environment
 .env
 Data/
+Temp/
 
 # IDE files
 .vscode/
@@ -35,3 +36,4 @@ dist/
 
 # Miscellaneous
 .DS_Store
+Prompts.txt
