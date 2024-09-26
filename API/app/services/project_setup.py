@@ -78,42 +78,85 @@ def save_data_csv(table_data: TableData, output_path):
         raise
 
 def save_readme(project_dir):
+    def save_readme(project_dir):
+        readme_content = """
+        # AutoDash Generated Dashboard
+
+        Este projeto foi gerado automaticamente pelo [**AutoDash**](https://github.com/luucaslfs/AutoDash/).
+
+        ## Como Instalar e Executar
+
+        ### Método 1: Instalação Local
+
+        1. **Clone o repositório** (caso esteja hospedado em um repositório Git):
+
+            ```bash
+            git clone https://github.com/seu-usuario/seu-repositorio.git
+            cd seu-repositorio
+            ```
+
+        2. **Instale as dependências**:
+
+            ```bash
+            pip install -r requirements.txt
+            ```
+
+        3. **Execute o dashboard Streamlit**:
+
+            ```bash
+            streamlit run app.py
+            ```
+
+        O dashboard estará disponível para acessar no seu navegador (veja o link no console).
+
+        ### Método 2: Usando Docker
+
+        Se você preferir usar Docker, siga estas etapas:
+
+        1. **Construa a imagem Docker**:
+
+            ```bash
+            docker build -t autodash-dashboard .
+            ```
+
+        2. **Execute o container**:
+
+            ```bash
+            docker run -p 8501:8501 autodash-dashboard
+            ```
+
+        O dashboard estará disponível em `http://localhost:8501`.
+
+        """
+        readme_path = os.path.join(project_dir, "README.md") 
+        write_file(readme_content, readme_path)
+
+def save_dockerfile(project_dir):
+    dockerfile_content = """
+    # Use uma imagem base oficial do Python
+    FROM python:3.9-slim
+
+    # Defina o diretório de trabalho no container
+    WORKDIR /app
+
+    # Copie os arquivos de requisitos primeiro para aproveitar o cache do Docker
+    COPY requirements.txt .
+
+    # Instale as dependências
+    RUN pip install --no-cache-dir -r requirements.txt
+
+    # Copie o resto dos arquivos do projeto para o container
+    COPY . .
+
+    # Exponha a porta que o Streamlit usa
+    EXPOSE 8501
+
+    # Comando para executar o aplicativo
+    CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     """
-    Cria um arquivo README.md com instruções básicas.
-    """
-    readme_content ="""
-    # AutoDash Generated Dashboard
-
-    Este projeto foi gerado automaticamente pelo [**AutoDash**](https://github.com/luucaslfs/AutoDash/).
-
-    ## Como Instalar
-
-    1. **Clone o repositório** (caso esteja hospedado em um repositório Git):
-
-        ```bash
-        git clone https://github.com/seu-usuario/seu-repositorio.git
-        cd seu-repositorio
-        ```
-
-    2. **Instale as dependências**:
-
-        ```bash
-        pip install -r requirements.txt
-        ```
-
-    ## Como Rodar
-
-    Execute o dashboard Streamlit com o seguinte comando:
-
-    ```bash
-    streamlit run app.py
-    ```
-
-    O dashboard estará disponível para acessar no seu navegador (veja o link no console).
-    """
-
-    readme_path = os.path.join(project_dir, "README.md") 
-    write_file(readme_content, readme_path)
+    dockerfile_path = os.path.join(project_dir, "Dockerfile") 
+    write_file(dockerfile_content, dockerfile_path)
+    logger.info(f"Arquivo Dockerfile criado: {dockerfile_path}")
 
 def add_additional_files(project_dir, additional_files):
     """
@@ -227,11 +270,12 @@ def organize_project(table_data, dashboard_code, additional_files=None, project_
         data_csv_path = os.path.join(project_dir, "data.csv")
         save_data_csv(table_data, data_csv_path)
 
-        # 5. Criar README.md
+        # 5. Criar README.md e Dockerfile
         save_readme(project_dir)
+        save_dockerfile(project_dir)
 
         # 6. Adicionar arquivos adicionais se houver
-        if additional_files:
+        if additional_files not in (None, {}):
             add_additional_files(project_dir, additional_files)
 
         # 7. Criar arquivo ZIP
