@@ -165,13 +165,22 @@ def cleanup_project(project_dir, zip_path):
     :param zip_path: Caminho para o arquivo ZIP.
     """
     try:
-        shutil.rmtree(project_dir)
-        logger.info(f"Diretório {project_dir} removido após criação do ZIP")
-        os.remove(zip_path)
-        logger.info(f"Arquivo ZIP {zip_path} removido após download")
+        # Primeiro, tente remover o arquivo ZIP
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+            logger.info(f"Arquivo ZIP {zip_path} removido")
+        else:
+            logger.info(f"Arquivo ZIP {zip_path} não encontrado para remoção")
+
+        # Em seguida, remova o diretório do projeto
+        if os.path.exists(project_dir):
+            shutil.rmtree(project_dir)
+            logger.info(f"Diretório {project_dir} removido após criação do ZIP")
+        else:
+            logger.info(f"Diretório {project_dir} não encontrado para remoção")
+
     except Exception as e:
         logger.warning(f"Erro ao limpar arquivos temporários: {e}")
-
 
 def save_data_csv_string(table_data):
     """
