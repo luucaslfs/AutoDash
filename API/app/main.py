@@ -1,6 +1,8 @@
 import logging
+import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from .services.state_manager import cleanup_expired_entries
 from .api.v1 import router as api_v1_router
 from dotenv import load_dotenv
 from .core.config import settings
@@ -30,6 +32,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Starts cleanup thread
+cleanup_thread = threading.Thread(target=cleanup_expired_entries, daemon=True)
+cleanup_thread.start()
 
 # Include the v1 API router
 app.include_router(api_v1_router, prefix="/api/v1")
