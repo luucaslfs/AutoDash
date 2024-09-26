@@ -55,3 +55,6 @@ class GitHubCallbackRequest(BaseModel):
 class GenerateDashboardRequest(BaseModel):
     table_data: 'TableData'
     model: AIModelEnum = AIModelEnum.CLAUDE # Default to Claude
+
+class DownloadDashboardRequest(BaseModel):
+    unique_id: str

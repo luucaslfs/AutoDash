@@ -1,10 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 import pandas as pd
 from ...database import get_db
-from ...models import GenerateDashboardRequest, AIModelEnum
+from ...models import GenerateDashboardRequest, AIModelEnum, DownloadDashboardRequest, TableData
 from ...services.llm_models import ClaudeClient, OpenAIClient 
-from ...services.utils import generate_data_description
+from ...services.utils import generate_data_description, fake_code
+from ...services.project_setup import organize_project, cleanup_project
+from ...services.state_manager import get_dashboard_code, store_dashboard_code, get_table_data
 import logging
 
 logger = logging.getLogger(__name__)
@@ -54,7 +57,7 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
 
         Dados{' (nota: esta é uma amostra do dataset completo)' if is_sample else ''}:
         ```csv
-        {df_sample}
+        {df_sample.to_csv(index=False)}
         ```
 
         O código deve:
@@ -70,7 +73,8 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
         Forneça apenas o código Python sem explicações adicionais.
         """
         
-        logger.info(f"Prompt criado: {prompt}")
+        logger.info("Prompt criado para geração do dashboard")
+        logger.debug(f"Prompt: {prompt}")
         
         # Instanciar o cliente de IA apropriado
         if model_choice == AIModelEnum.CLAUDE:
@@ -78,16 +82,82 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
             logger.info("Usando ClaudeClient para gerar o código do dashboard")
         elif model_choice == AIModelEnum.OPENAI:
             client = OpenAIClient()
-            logger.info("Usando OpenAIClient para gerar o código do dashboard")
+            logger.info("Usando OpenAIClient para gerar o código do dashboard, Prompt: {prompt}")
         else:
             raise ValueError(f"Escolha de modelo não suportada: {model_choice}")
         
         # Chamar o cliente de IA para gerar o código do dashboard
-        dashboard_code = client.generate_response(prompt)
-        
+        dashboard_code = fake_code()
+        #dashboard_code = client.generate_response(prompt)
         logger.info("Dashboard code gerado com sucesso")
-        return {"dashboard_code": dashboard_code}
+         
+        # Armazenar o código gerado e obter um UUID
+        unique_id = store_dashboard_code(dashboard_code, preview_data=table_data)
+        logger.info(f"Dashboard code armazenado com UUID: {unique_id}")
+        
+        # Retornar o código e o UUID para o frontend
+        return {
+            "unique_id": unique_id,
+            "dashboard_code": dashboard_code
+        }
     except Exception as e:
         logger.exception("Erro em generate_dashboard")
         raise HTTPException(status_code=400, detail=str(e))
 
+@dashboard_router.post("/download-dashboard")
+def download_dashboard(
+    request: DownloadDashboardRequest, 
+    background_tasks: BackgroundTasks
+):
+    try:
+        unique_id = request.unique_id
+
+        logger.info(f"Request to download dashboard with unique_id: {unique_id}")
+        
+        # Recuperar o código do dashboard associado ao unique_id
+        dashboard_code = get_dashboard_code(unique_id)
+        if not dashboard_code:
+            raise HTTPException(status_code=404, detail="Dashboard not found or has expired.")
+        
+        # Recuperar os dados associados ao unique_id
+        table_data = get_table_data(unique_id)
+        if not table_data:
+            raise HTTPException(status_code=404, detail="Table data not found for the provided unique_id.")
+        
+         # Garantir que table_data é um objeto TableData
+        if not isinstance(table_data, TableData):
+            table_data = TableData(columns=table_data['columns'], data=table_data['data'])
+        
+        # Definir arquivos adicionais
+        additional_files = {
+            "assets/style.css": """
+            body {
+                font-family: Arial, sans-serif;
+            }
+            """,
+            "assets/data_description.txt": "Descrição dos dados..."
+        }
+        
+        # Organizar o projeto e criar ZIP
+        project_dir = f"generated_dashboard_{unique_id}"
+        zip_path = organize_project(
+            table_data=table_data,
+            dashboard_code=dashboard_code,
+            additional_files=additional_files,
+            project_dir=project_dir
+        )
+        
+        logger.info(f"Projeto organizado em {zip_path}")
+        
+        # Adicionar tarefa de limpeza ao background
+        background_tasks.add_task(cleanup_project, project_dir, zip_path)
+        
+        # Retornar o arquivo ZIP como resposta
+        return FileResponse(path=zip_path, filename="dashboard_project.zip", media_type='application/zip')
+        
+    except HTTPException as he:
+        logger.exception("Erro em download_dashboard")
+        raise he
+    except Exception as e:
+        logger.exception("Erro em download_dashboard")
+        raise HTTPException(status_code=400, detail=str(e))

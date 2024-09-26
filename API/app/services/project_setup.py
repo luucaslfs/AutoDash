@@ -7,6 +7,7 @@ import io
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
+from ..models import TableData  
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)
@@ -64,12 +65,12 @@ def generate_requirements():
     requirements_content = "\n".join(dependencies)
     return requirements_content
 
-def save_data_csv(table_data, output_path):
+def save_data_csv(table_data: TableData, output_path):
     """
     Salva os dados do usuário em um arquivo CSV.
     """
     try:
-        df = pd.DataFrame(table_data['data'], columns=table_data['columns'])
+        df = pd.DataFrame(table_data.data, columns=table_data.columns)
         df.to_csv(output_path, index=False)
         logger.info(f"Dados salvos em {output_path}")
     except Exception as e:
@@ -194,7 +195,7 @@ def organize_project(table_data, dashboard_code, additional_files=None, project_
     """
     Organiza os arquivos do projeto criando a estrutura de diretórios e adicionando os arquivos.
 
-    :param table_data: Dicionário contendo 'columns' e 'data' para o CSV.
+    :param table_data: Objeto TableData contendo 'columns' e 'data' para o CSV.
     :param dashboard_code: Código do dashboard gerado pelo AI.
     :param additional_files: Dicionário opcional com caminhos e conteúdos de arquivos adicionais.
     :param project_dir: Nome do diretório do projeto.
