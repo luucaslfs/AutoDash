@@ -3,11 +3,13 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 import pandas as pd
 from ...database import get_db
-from ...models import GenerateDashboardRequest, AIModelEnum, DownloadDashboardRequest, TableData
+from ...models import GenerateDashboardRequest, AIModelEnum, DownloadDashboardRequest, TableData, CreateGitHubRepoRequest
 from ...services.llm_models import ClaudeClient, OpenAIClient 
 from ...services.utils import generate_data_description, fake_code
 from ...services.project_setup import organize_project, cleanup_project
 from ...services.state_manager import get_dashboard_code, store_dashboard_code, get_table_data
+from ...services.github import generate_dashboard_files
+from ...services.github_service import GitHubService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -161,3 +163,34 @@ def download_dashboard(
     except Exception as e:
         logger.exception("Erro em download_dashboard")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@dashboard_router.post("/create-github-repo")
+def create_github_repo(request: CreateGitHubRepoRequest, db: Session = Depends(get_db)):
+    try:
+        # Initialize GitHub service
+        github_service = GitHubService(request.access_token)
+
+        # Create repository
+        repo_info = github_service.create_repository(request.repo_name, request.description)
+
+        # Generate dashboard files
+        dashboard_files = generate_dashboard_files(request.table_data, request.generated_code)
+
+        # Commit files to the new repository
+        commit_result = github_service.create_commit(
+            owner=repo_info["owner"]["login"],
+            repo=repo_info["name"],
+            branch="main",
+            message="Initial commit: Add AutoDash generated files",
+            files=dashboard_files
+        )
+
+        return {
+            "message": "GitHub repository created and files committed successfully",
+            "repo_url": repo_info["html_url"],
+            "commit_result": commit_result
+        }
+    except Exception as e:
+        logger.exception("Error in create_github_repo")
+        raise HTTPException(status_code=500, detail=str(e))
