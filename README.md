@@ -1,50 +1,107 @@
+# AutoDash 📊
 
-# AutoDash - Automated Dashboard Generator
+AutoDash is an innovative tool that automatically generates interactive Streamlit dashboards from tabular data using AI-powered code generation. With AutoDash, you can transform your CSV files into beautiful, functional dashboards with just a few clicks.
 
-**AutoDash** is a web-based application designed to simplify the process of creating insightful dashboards from your datasets. Whether you're a beginner with no programming skills or an experienced data analyst looking for a quick start, AutoDash helps you transform raw data (CSV, XLSX) into meaningful visualizations with ease.
+![AutoDash Demo](https://i.imgur.com/b79yiqV.png)
 
-## Key Features
-- **Automated Code Generation:** Upload your data, and AutoDash generates Python code to create customizable dashboards.
-- **User-Friendly Interface:** Designed for users of all skill levels, with an intuitive interface that guides you through the process.
-- **Time-Saving:** Quickly generate visual insights without the need for extensive coding, allowing you to focus on analysis and decision-making.
-- **Flexible Output:** Use the generated code as-is or modify it to suit your specific needs.
-- **Supports Various Data Formats:** Compatible with CSV and XLSX files, making it easy to start with your existing data.
+## 🚀 Features
 
-## Getting Started
+- **AI-Powered Dashboard Generation**: Utilizes advanced AI models (Claude and OpenAI) to create custom Streamlit dashboard code.
+- **One-Click GitHub Integration**: Easily create a new GitHub repository with your dashboard code.
+- **Download Option**: Download your dashboard as a structured project, ready to run.
 
-### Prerequisites
-- Python 3.x
-- Required Python packages (listed in `requirements.txt`)
+## 🏗️ Project Structure
 
-### Installation
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/AutoDash.git
+AutoDash is split into two repositories:
+
+1. Backend (this repository): Contains the API and core logic for dashboard generation.
+2. Frontend: Contains the user interface. [Link to Frontend Repository](https://github.com/luucaslfs/AutoDash-Front)
+
+## 🛠️ Installation
+
+### Backend Setup
+
+1. Clone the backend repository:
+   ```
+   git clone https://github.com/luucaslfs/AutoDash.git
    cd AutoDash
    ```
 
-2. **Install dependencies:**
-   ```bash
+2. Install dependencies:
+   ```
+   cd API
    pip install -r requirements.txt
    ```
 
-3. **Run the application locally:**
-   ```bash
-   python app.py
+3. Set up environment variables:
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   DATABASE_URL=your_database_url
+   GITHUB_CLIENT_ID=your_github_client_id
+   GITHUB_CLIENT_SECRET=your_github_client_secret
+   CLAUDE_API_KEY=your_claude_api_key
+   OPENAI_API_KEY=your_openai_api_key
    ```
 
-### Usage
-1. Soon
+### Frontend Setup
 
-## Contributing
-We welcome contributions from the community! Please follow these steps:
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make your changes and commit them (`git commit -m 'Add some feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Open a pull request.
+1. Clone the frontend repository:
+   ```
+   git clone https://github.com/your-username/AutoDash-Front.git
+   cd AutoDash-Front
+   ```
 
-Please read our [contributing guidelines](CONTRIBUTING.md) for more details.
+2. Install dependencies:
+   ```
+   cd autodash
+   npm install
+   ```
 
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## 🖥️ Usage
+
+1. Start the backend server:
+   ```
+   cd API
+   uvicorn app.main:app --reload
+   ```
+
+2. In a new terminal, start the frontend development server:
+   ```
+   cd AutoDash-Front/autodash
+   npm run dev
+   ```
+
+3. Open your browser and navigate to `http://localhost:3000`.
+
+4. Upload your CSV or Excel file, choose an AI model, and click "Generate Dashboard".
+
+5. Review the generated code, make any necessary edits, and either download the project or create a GitHub repository.
+
+## 🤝 Contributing
+
+We welcome contributions to both the backend and frontend of AutoDash! 
+
+## 📄 License
+
+AutoDash is released under the MIT License. See the [LICENSE](link-to-license-file) file for more details.
+
+## 🙏 Acknowledgements
+
+- [Streamlit](https://streamlit.io/) for making it easy to create beautiful data apps.
+- [OpenAI](https://openai.com/) and [Anthropic](https://www.anthropic.com/) for their powerful AI models.
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+- For backend issues, please [open an issue](https://github.com/your-username/AutoDash/issues/new) on our backend GitHub repository.
+- For frontend issues, please [open an issue](https://github.com/your-username/AutoDash-Front/issues/new) on our frontend GitHub repository.
+
+## 🎥 Demo
+
+Check out our video tutorial on how to use AutoDash:
+
+[![AutoDash Tutorial](link-to-youtube-thumbnail)](link-to-youtube-video)
+
+---
+
+Made with ❤️ by [Lucas Florencio]
