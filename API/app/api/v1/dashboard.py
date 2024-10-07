@@ -5,11 +5,12 @@ import pandas as pd
 from ...database import get_db
 from ...models import GenerateDashboardRequest, AIModelEnum, DownloadDashboardRequest, TableData, CreateGitHubRepoRequest
 from ...services.llm_models import ClaudeClient, OpenAIClient 
-from ...services.utils import generate_data_description, fake_code
+from ...services.utils import generate_data_description, clean_dashboard_code, fake_code
 from ...services.project_setup import organize_project, cleanup_project
 from ...services.state_manager import get_dashboard_code, store_dashboard_code, get_table_data
 from ...services.github import generate_dashboard_files
 from ...services.github_service import GitHubService
+from ...core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
         
         # Amostragem se necessário
         if len(df) > 1000:
-            sample_size = min(1000, int(len(df) * 0.2))
+            sample_size = min(500, int(len(df) * 0.2))
             df_sample = df.sample(n=sample_size, random_state=42)
             is_sample = True
         else:
@@ -76,6 +77,7 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
         """
         
         logger.info("Prompt criado para geração do dashboard")
+        logger.info("Descricao dos Dados: \n" + data_description)
         logger.debug(f"Prompt: {prompt}")
         
         # Instanciar o cliente de IA apropriado
@@ -84,13 +86,14 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
             logger.info("Usando ClaudeClient para gerar o código do dashboard")
         elif model_choice == AIModelEnum.OPENAI:
             client = OpenAIClient()
-            logger.info("Usando OpenAIClient para gerar o código do dashboard, Prompt: {prompt}")
+            logger.info("Usando OpenAIClient para gerar o código do dashboard")
         else:
             raise ValueError(f"Escolha de modelo não suportada: {model_choice}")
         
         # Chamar o cliente de IA para gerar o código do dashboard
-        dashboard_code = fake_code()
-        #dashboard_code = client.generate_response(prompt)
+        #dashboard_code = fake_code()
+        dashboard_code = client.generate_response(prompt)
+        dashboard_code = clean_dashboard_code(dashboard_code)
         logger.info("Dashboard code gerado com sucesso")
          
         # Armazenar o código gerado e obter um UUID
@@ -168,13 +171,17 @@ def download_dashboard(
 @dashboard_router.post("/create-github-repo")
 def create_github_repo(request: CreateGitHubRepoRequest, db: Session = Depends(get_db)):
     try:
-        # Initialize GitHub service
         github_service = GitHubService(request.access_token)
-
-        # Create repository
-        repo_info = github_service.create_repository(request.repo_name, request.description)
-
-        # Generate dashboard files
+        repo_info = github_service.create_repo_with_installation_check(request.repo_name, request.description)
+        
+        # Verificar se o App não está instalado
+        if "message" in repo_info and repo_info["message"] == "GitHub App not installed":
+            logger.info("GitHub App not installed. Returning installation URL.")
+            return {
+                "message": "GitHub App not installed",
+                "installation_url": repo_info["installation_url"]
+            }
+        
         dashboard_files = generate_dashboard_files(request.table_data, request.generated_code)
 
         # Commit files to the new repository

@@ -2,101 +2,74 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-
-# Configuração da página
-st.set_page_config(page_title="Movie Dashboard", layout="wide")
-
-# Carregar os dados
+# Load data
 @st.cache_data
 def load_data():
     df = pd.read_csv('data.csv')
-    df['in_theaters_date'] = pd.to_datetime(df['in_theaters_date'], errors='coerce')
-    df['on_streaming_date'] = pd.to_datetime(df['on_streaming_date'], errors='coerce')
-    df['runtime_in_minutes'] = pd.to_numeric(df['runtime_in_minutes'], errors='coerce')
-    df['tomatometer_rating'] = pd.to_numeric(df['tomatometer_rating'], errors='coerce')
-    df['audience_rating'] = pd.to_numeric(df['audience_rating'], errors='coerce')
     return df
-
 df = load_data()
-
-# Título
-st.title('Movie Dashboard')
-
+# Title
+st.title('Movie Analysis Dashboard')
 # Sidebar
 st.sidebar.header('Filters')
 selected_genre = st.sidebar.multiselect('Select Genre', df['genre'].unique())
-selected_rating = st.sidebar.multiselect('Select Rating', df['rating'].unique())
-
-# Aplicar filtros
+min_rating = st.sidebar.slider('Minimum Tomatometer Rating', 0, 100, 0)
+# Filter data
 if selected_genre:
-    df = df[df['genre'].isin(selected_genre)]
-if selected_rating:
-    df = df[df['rating'].isin(selected_rating)]
-
-# Layout principal
-col1, col2 = st.columns(2)
-
-# Gráfico de dispersão: Tomatometer Rating vs Audience Rating
-with col1:
-    st.subheader('Tomatometer Rating vs Audience Rating')
-    fig = px.scatter(df, x='tomatometer_rating', y='audience_rating', hover_name='movie_title',
-                     color='tomatometer_status', size='tomatometer_count')
-    st.plotly_chart(fig, use_container_width=True)
-
-# Histograma: Runtime Distribution
-with col2:
-    st.subheader('Runtime Distribution')
-    fig = px.histogram(df, x='runtime_in_minutes', nbins=30)
-    st.plotly_chart(fig, use_container_width=True)
-
-# Top 10 Directors
-top_directors = df['directors'].value_counts().head(10)
-fig = px.bar(top_directors, x=top_directors.index, y=top_directors.values, title='Top 10 Directors')
-st.plotly_chart(fig, use_container_width=True)
-
-# Genre Distribution
-genre_counts = df['genre'].value_counts()
-fig = px.pie(genre_counts, values=genre_counts.values, names=genre_counts.index, title='Genre Distribution')
-st.plotly_chart(fig, use_container_width=True)
-
-# Tomatometer Status Distribution
-tomatometer_status_counts = df['tomatometer_status'].value_counts()
-fig = px.pie(tomatometer_status_counts, values=tomatometer_status_counts.values, names=tomatometer_status_counts.index, title='Tomatometer Status Distribution')
-st.plotly_chart(fig, use_container_width=True)
-
-# Movies over time
-df['year'] = df['in_theaters_date'].dt.year
-movies_per_year = df.groupby('year').size().reset_index(name='count')
-fig = px.line(movies_per_year, x='year', y='count', title='Number of Movies Released per Year')
-st.plotly_chart(fig, use_container_width=True)
-
-# Word Cloud of Movie Titles
-def plot_wordcloud(text):
-    wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.imshow(wordcloud, interpolation='bilinear')
-    ax.axis('off')
-    st.pyplot(fig)
-
-st.subheader('Word Cloud of Movie Titles')
-all_titles = ' '.join(df['movie_title'])
-plot_wordcloud(all_titles)
-
-# Estatísticas interativas
-st.subheader('Interactive Statistics')
-column = st.selectbox('Select a column for statistics', ['tomatometer_rating', 'audience_rating', 'runtime_in_minutes'])
-st.write(df[column].describe())
-
-# Top Movies
-st.subheader('Top Movies')
-sort_by = st.selectbox('Sort by', ['tomatometer_rating', 'audience_rating', 'tomatometer_count', 'audience_count'])
-top_n = st.slider('Number of top movies to show', 5, 50, 10)
-
-top_movies = df.sort_values(sort_by, ascending=False).head(top_n)
-st.table(top_movies[['movie_title', sort_by]])
-
-# Footer
-st.markdown('---')
-st.write('Data source: Rotten Tomatoes')
+    df_filtered = df[df['genre'].isin(selected_genre)]
+else:
+    df_filtered = df
+df_filtered = df_filtered[df_filtered['tomatometer_rating'].astype(float) >= min_rating]
+# Main content
+st.header('Movie Overview')
+# Genre distribution
+genre_counts = df_filtered['genre'].value_counts()
+fig_genre = px.pie(values=genre_counts.values, names=genre_counts.index, title='Genre Distribution')
+st.plotly_chart(fig_genre)
+# Rating distribution
+fig_rating = px.histogram(df_filtered, x='tomatometer_rating', title='Tomatometer Rating Distribution')
+st.plotly_chart(fig_rating)
+# Audience vs Critic ratings
+fig_audience_critic = px.scatter(df_filtered, x='tomatometer_rating', y='audience_rating', 
+                                 hover_data=['movie_title'], title='Audience vs Critic Ratings')
+st.plotly_chart(fig_audience_critic)
+# Top rated movies
+st.subheader('Top Rated Movies')
+top_movies = df_filtered.sort_values('tomatometer_rating', ascending=False).head(10)
+st.table(top_movies[['movie_title', 'tomatometer_rating', 'audience_rating']])
+# Runtime analysis
+st.subheader('Runtime Analysis')
+df_filtered['runtime_in_minutes'] = pd.to_numeric(df_filtered['runtime_in_minutes'], errors='coerce')
+fig_runtime = px.box(df_filtered, x='genre', y='runtime_in_minutes', title='Movie Runtime by Genre')
+st.plotly_chart(fig_runtime)
+# Correlation heatmap
+st.subheader('Correlation Heatmap')
+numeric_cols = ['tomatometer_rating', 'tomatometer_count', 'audience_rating', 'audience_count']
+corr_matrix = df_filtered[numeric_cols].corr()
+fig_corr = go.Figure(data=go.Heatmap(z=corr_matrix.values, x=corr_matrix.index, y=corr_matrix.columns))
+fig_corr.update_layout(title='Correlation Heatmap')
+st.plotly_chart(fig_corr)
+# Movie release timeline
+st.subheader('Movie Release Timeline')
+df_filtered['in_theaters_date'] = pd.to_datetime(df_filtered['in_theaters_date'], errors='coerce')
+fig_timeline = px.scatter(df_filtered, x='in_theaters_date', y='tomatometer_rating', 
+                          hover_data=['movie_title'], title='Movie Release Timeline')
+st.plotly_chart(fig_timeline)
+# Word cloud of movie titles
+st.subheader('Movie Title Word Cloud')
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(' '.join(df_filtered['movie_title']))
+fig_wordcloud, ax = plt.subplots()
+ax.imshow(wordcloud, interpolation='bilinear')
+ax.axis('off')
+st.pyplot(fig_wordcloud)
+# Interactive movie search
+st.subheader('Movie Search')
+search_term = st.text_input('Enter a movie title')
+if search_term:
+    results = df[df['movie_title'].str.contains(search_term, case=False)]
+    if not results.empty:
+        st.table(results[['movie_title', 'genre', 'tomatometer_rating', 'audience_rating']])
+    else:
+        st.write('No results found.')

@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     GH_CALLBACK_URL: str
     GH_CLIENT_ID: str
     GH_CLIENT_SECRET: str
+    GH_APP_NAME: str
+    GH_APP_ID: int
 
     model_config = SettingsConfigDict(
         env_file=".env",

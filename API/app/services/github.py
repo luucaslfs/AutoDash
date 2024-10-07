@@ -22,13 +22,8 @@ def github_oauth_callback(code: str, db: Session):
             "redirect_uri": settings.GH_CALLBACK_URL,
         }
         headers = {"Accept": "application/json"}
-
-        logger.info(f"Sending token request to GitHub with params: {token_params}")
+        
         token_response = requests.post(token_url, params=token_params, headers=headers)
-
-        logger.info(f"Token response status: {token_response.status_code}")
-        logger.info(f"Token response headers: {token_response.headers}")
-        logger.info(f"Token response content: {token_response.text}")
 
         if token_response.status_code != 200:
             logger.error(f"Failed to obtain access token. Status: {token_response.status_code}, Response: {token_response.text}")
@@ -60,7 +55,6 @@ def github_oauth_callback(code: str, db: Session):
             raise HTTPException(status_code=400, detail=f"Failed to fetch user information: {user_response.text}")
 
         github_user_data = user_response.json()
-        logger.info(f"Received GitHub user data: {github_user_data}")
 
         # Create or update user in database
         user_data = UserCreate(

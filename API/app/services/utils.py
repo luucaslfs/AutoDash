@@ -45,6 +45,14 @@ def generate_data_description(df):
     
     return "\n".join(description)
 
+def clean_dashboard_code(code: str) -> str:
+    lines = code.split('\n')
+    # Remove ```python at the start and ``` at the end, if present
+    if lines and lines[0].strip().startswith('```python'):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == '```':
+        lines = lines[:-1]
+    return '\n'.join(line for line in lines if line.strip())
 
 def fake_code():
     return """
