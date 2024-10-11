@@ -12,6 +12,7 @@ from ...services.github import generate_dashboard_files
 from ...services.github_service import GitHubService
 from ...core.config import settings
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,13 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
         # Armazenar o código gerado e obter um UUID
         unique_id = store_dashboard_code(dashboard_code, preview_data=table_data)
         logger.info(f"Dashboard code armazenado com UUID: {unique_id}")
+
+        # Certificar-se de que o diretório 'prompts' existe
+        os.makedirs('prompts', exist_ok=True)
+        
+        # Armazenar prompt num .txt
+        with open(f"prompts/{unique_id}.txt", "w") as f:
+            f.write(prompt)
         
         # Retornar o código e o UUID para o frontend
         return {
