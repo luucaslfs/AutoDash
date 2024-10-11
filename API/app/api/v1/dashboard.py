@@ -92,9 +92,9 @@ def generate_dashboard(request: GenerateDashboardRequest, db: Session = Depends(
             raise ValueError(f"Escolha de modelo não suportada: {model_choice}")
         
         # Chamar o cliente de IA para gerar o código do dashboard
-        #dashboard_code = fake_code()
-        dashboard_code = client.generate_response(prompt)
-        dashboard_code = clean_dashboard_code(dashboard_code)
+        dashboard_code = fake_code()
+        #dashboard_code = client.generate_response(prompt)
+        #dashboard_code = clean_dashboard_code(dashboard_code)
         logger.info("Dashboard code gerado com sucesso")
          
         # Armazenar o código gerado e obter um UUID
