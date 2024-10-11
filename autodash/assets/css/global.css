@@ -1,0 +1,42 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --color-primary: #794cec;
+  --color-secondary: #2ca0e2;
+  --color-background: #794cec;
+  --color-surface: #794cec;
+  --color-surface-light: #794cec;
+  --color-text-light: #a0aec0;
+  --color-text: #ffffff;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-primary);
+}
+
+.btn-primary {
+  @apply bg-[var(--color-primary)] hover:bg-[#6a3dd3] text-white font-bold py-2 px-4 rounded transition duration-300;
+}
+
+.btn-secondary {
+  @apply bg-[var(--color-secondary)] hover:bg-[#2590cc] text-white font-bold py-2 px-4 rounded transition duration-300;
+}
+
+.input-field {
+  @apply w-full p-2 border border-[var(--color-secondary)] rounded bg-[var(--color-surface)] text-white;
+}
+
+.card {
+  @apply bg-[var(--color-surface)] shadow-md rounded-lg p-6;
+}
+
+.link {
+  @apply text-[var(--color-secondary)] hover:underline;
+}
