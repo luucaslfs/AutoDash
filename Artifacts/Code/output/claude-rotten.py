@@ -100,4 +100,3 @@ st.table(top_movies[['movie_title', sort_by]])
 # Footer
 st.markdown('---')
 st.write('Data source: Rotten Tomatoes')
-"""
