@@ -2,7 +2,9 @@
 
 AutoDash is an innovative tool that automatically generates interactive Streamlit dashboards from tabular data using AI-powered code generation. With AutoDash, you can transform your CSV files into beautiful, functional dashboards with just a few clicks.
 
-![AutoDash Demo](https://i.imgur.com/b79yiqV.png)
+Check out our Demo on how to use AutoDash (click the image below to be redirected to the video):
+
+[![AutoDash Demo](https://i.imgur.com/WI4Ahj3.png)](https://youtu.be/KB6ONhBVRGI)
 
 ## 🚀 Features
 
@@ -12,16 +14,20 @@ AutoDash is an innovative tool that automatically generates interactive Streamli
 
 ## 🏗️ Project Structure
 
-AutoDash is split into two repositories:
+1. Backend: Contains the API and core logic for dashboard generation.
+2. Frontend: Contains the user interface. 
 
-1. Backend (this repository): Contains the API and core logic for dashboard generation.
-2. Frontend: Contains the user interface. [Link to Frontend Repository](https://github.com/luucaslfs/AutoDash-Front)
+## 📦 Tech Overview
+
+- **Backend**: MVC architecture, made using FastAPI, SQLAlchemy, Pydantic.
+- **Frontend**: Vue, Nuxt, Tailwind CSS.
+- **AI Models**: Claude, OpenAI.
 
 ## 🛠️ Installation
 
 ### Backend Setup
 
-1. Clone the backend repository:
+1. Clone the repository:
    ```
    git clone https://github.com/luucaslfs/AutoDash.git
    cd AutoDash
@@ -45,15 +51,15 @@ AutoDash is split into two repositories:
 
 ### Frontend Setup
 
-1. Clone the frontend repository:
+1. Clone the repository:
    ```
-   git clone https://github.com/your-username/AutoDash-Front.git
-   cd AutoDash-Front
+   git clone https://github.com/luucaslfs/AutoDash.git
+   cd AutoDash
    ```
 
 2. Install dependencies:
    ```
-   cd autodash
+   cd autodash-front
    npm install
    ```
 
@@ -67,7 +73,7 @@ AutoDash is split into two repositories:
 
 2. In a new terminal, start the frontend development server:
    ```
-   cd AutoDash-Front/autodash
+   cd autodash-front
    npm run dev
    ```
 
@@ -100,7 +106,7 @@ If you encounter any issues or have questions:
 
 Check out our video tutorial on how to use AutoDash:
 
-[![AutoDash Tutorial](link-to-youtube-thumbnail)](link-to-youtube-video)
+- [YouTube Link](https://youtu.be/KB6ONhBVRGI)
 
 ---
 
